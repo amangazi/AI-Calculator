@@ -4,9 +4,9 @@ import streamlit as st
 from modules.request_processor import process_request
 
 
-# --------------------------------
+# ==========================================
 # Page configuration
-# --------------------------------
+# ==========================================
 
 st.set_page_config(
     page_title="AI Calculator",
@@ -15,9 +15,66 @@ st.set_page_config(
 )
 
 
-# --------------------------------
-# Application heading
-# --------------------------------
+# ==========================================
+# Session state
+# ==========================================
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+
+# ==========================================
+# Sidebar
+# ==========================================
+
+with st.sidebar:
+
+    st.title("🧮 AI Calculator")
+
+    st.caption("Natural-language mathematical assistant")
+
+    st.divider()
+
+    st.subheader("Supported Operations")
+
+    st.markdown(
+        """
+        - Basic arithmetic
+        - Differentiation
+        - Integration
+        - Equation solving
+        - Expression expansion
+        - Factorisation
+        - Trigonometric functions
+        - Logarithms
+        - Square roots
+        - Exponential functions
+        """
+    )
+
+    st.divider()
+
+    st.subheader("Technology Stack")
+
+    st.markdown(
+        """
+        - Python
+        - SymPy
+        - NumPy
+        - Streamlit
+        """
+    )
+
+    st.divider()
+
+    st.caption(
+        "Developed as an AI Calculator internship project."
+    )
+
+
+# ==========================================
+# Main application
+# ==========================================
 
 st.title("🧮 AI Calculator")
 
@@ -26,25 +83,29 @@ st.caption(
     "powered by Python and SymPy."
 )
 
-
-# --------------------------------
-# Session state
-# --------------------------------
-
-if "history" not in st.session_state:
-    st.session_state.history = []
+st.write(
+    "Enter a mathematical request in natural language "
+    "or use a mathematical expression."
+)
 
 
-# --------------------------------
+# ==========================================
 # Input form
-# --------------------------------
+# ==========================================
 
 with st.form("calculator_form"):
 
     user_input = st.text_area(
         "Enter your mathematical request",
-        placeholder="e.g. Differentiate x**2 + 3*x",
-        height=100
+        placeholder=(
+            "Examples:\n"
+            "Differentiate x**2 + 3*x\n"
+            "Integrate x**2 + 3*x\n"
+            "Factorise x**2 + 5*x + 6\n"
+            "Find roots of x**2 - 9\n"
+            "Calculate square root of 144"
+        ),
+        height=130
     )
 
     submitted = st.form_submit_button(
@@ -53,15 +114,17 @@ with st.form("calculator_form"):
     )
 
 
-# --------------------------------
+# ==========================================
 # Process request
-# --------------------------------
+# ==========================================
 
 if submitted:
 
     if not user_input.strip():
 
-        st.warning("Please enter a mathematical request.")
+        st.warning(
+            "Please enter a mathematical request."
+        )
 
     else:
 
@@ -85,9 +148,9 @@ if submitted:
             )
 
 
-# --------------------------------
+# ==========================================
 # Display latest result
-# --------------------------------
+# ==========================================
 
 if st.session_state.history:
 
@@ -100,17 +163,23 @@ if st.session_state.history:
 
         st.subheader("Result")
 
-        st.success("Calculation completed successfully!")
+        st.caption(
+            f"Operation: {response['operation'].replace('_', ' ').title()}"
+        )
+
+        st.success(
+            "Calculation completed successfully!"
+        )
 
         st.code(
             response["result"],
             language="text"
         )
 
-        # Display mathematical explanations separately.
+        # Display mathematical explanations.
         if response["explanation"]:
 
-            st.subheader("Step-by-step explanation")
+            st.subheader("Step-by-step Explanation")
 
             for index, step in enumerate(
                 response["explanation"],
@@ -123,12 +192,14 @@ if st.session_state.history:
 
     else:
 
+        st.subheader("Calculation Error")
+
         st.error(response["error"])
 
 
-# --------------------------------
+# ==========================================
 # Calculation history
-# --------------------------------
+# ==========================================
 
 if st.session_state.history:
 
@@ -136,30 +207,42 @@ if st.session_state.history:
 
     st.subheader("Calculation History")
 
-    if st.button("Clear History"):
+    if st.button(
+        "Clear History",
+        use_container_width=True
+    ):
 
         st.session_state.history.clear()
+
         st.rerun()
 
     for item in st.session_state.history:
 
+        history_response = item["response"]
+
         with st.expander(item["input"]):
 
-            history_response = item["response"]
-
             if history_response["success"]:
+
+                st.caption(
+                    f"Operation: {history_response['operation']}"
+                )
 
                 st.code(
                     history_response["result"],
                     language="text"
                 )
 
-                for index, step in enumerate(
-                    history_response["explanation"],
-                    start=1
-                ):
+                if history_response["explanation"]:
 
-                    st.write(f"{index}. {step}")
+                    st.markdown("**Explanation**")
+
+                    for index, step in enumerate(
+                        history_response["explanation"],
+                        start=1
+                    ):
+
+                        st.write(f"{index}. {step}")
 
             else:
 

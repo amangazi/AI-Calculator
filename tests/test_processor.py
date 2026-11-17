@@ -49,7 +49,23 @@ def test_integration():
 
     assert result["success"] is True
     assert result["operation"] == "integrate"
-    assert result["result"] == "Result: -cos(x)"
+    assert result["result"] == "Result: -cos(x) + C"
+    assert len(result["explanation"]) > 0
+    assert any(
+        "constant of integration" in step.lower()
+        for step in result["explanation"]
+    )
+
+
+def test_integration_polynomial():
+    result = process_request("integrate x**2 + 3*x")
+
+    assert result["success"] is True
+    assert result["operation"] == "integrate"
+    assert result["result"] == (
+        "Result: x**3/3 + 3*x**2/2 + C"
+    )
+    assert len(result["explanation"]) > 0
 
 
 def test_equation_solving():
@@ -252,8 +268,6 @@ def test_explanation_exception(monkeypatch):
     assert result["error"] == (
         "Unable to complete the mathematical operation."
     )
-
-
 
 
 # ==========================================

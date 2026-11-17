@@ -2,7 +2,10 @@
 import re
 
 
-# Supported mathematical operations and their keywords
+# ==========================================
+# Operation recognition
+# ==========================================
+
 OPERATION_PATTERNS = {
     "differentiate": (
         r"\bdifferentiate\b",
@@ -100,7 +103,10 @@ OPERATION_PATTERNS = {
 }
 
 
-# Phrases removed before mathematical expression parsing
+# ==========================================
+# Expression extraction
+# ==========================================
+
 EXTRACTION_PATTERNS = {
     "differentiate": (
         r"find the derivative of",
@@ -220,6 +226,10 @@ EXTRACTION_PATTERNS = {
 }
 
 
+# ==========================================
+# Identify mathematical operation
+# ==========================================
+
 def identify_operation(user_input):
 
     if not isinstance(user_input, str):
@@ -234,11 +244,19 @@ def identify_operation(user_input):
 
         for pattern in patterns:
 
-            if re.search(pattern, text, flags=re.IGNORECASE):
+            if re.search(
+                pattern,
+                text,
+                flags=re.IGNORECASE
+            ):
                 return operation
 
     return None
 
+
+# ==========================================
+# Extract mathematical expression
+# ==========================================
 
 def extract_expression(user_input):
 
@@ -252,10 +270,40 @@ def extract_expression(user_input):
 
     text = user_input.strip()
 
-    patterns = EXTRACTION_PATTERNS[operation]
+    # Handle subtraction phrased as:
+    # "difference between 10 and 3"
+    #
+    # The processor expects:
+    # "3 from 10"
+    if operation == "subtract":
 
-    # Remove the first matching operation phrase
-    for pattern in patterns:
+        match = re.fullmatch(
+            r"\s*difference between\s+(.+?)\s+and\s+(.+?)\s*[?.!,;:]*\s*",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if match:
+            first, second = match.groups()
+            return f"{second} from {first}".strip()
+
+    # Handle division phrased as:
+    # "10 divided by 2"
+    #
+    # The processor expects:
+    # "10 by 2"
+    if operation == "divide":
+
+        text = re.sub(
+            r"\bdivided\s+by\b",
+            "by",
+            text,
+            count=1,
+            flags=re.IGNORECASE
+        )
+
+    # Remove the first matching operation phrase.
+    for pattern in EXTRACTION_PATTERNS[operation]:
 
         updated_text = re.sub(
             pattern,
@@ -269,7 +317,7 @@ def extract_expression(user_input):
             text = updated_text
             break
 
-    # Remove common introductory words
+    # Remove common introductory words.
     text = re.sub(
         r"^\s*(of|for)\s+",
         "",
@@ -277,7 +325,7 @@ def extract_expression(user_input):
         flags=re.IGNORECASE
     )
 
-    # Remove trailing punctuation
+    # Remove trailing punctuation.
     text = text.strip().rstrip("?.!,;:")
 
     return text.strip()

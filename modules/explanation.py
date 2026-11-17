@@ -42,3 +42,47 @@ def explain_differentiation(expression, variable):
     )
 
     return steps
+
+def explain_integration(expression, variable):
+    """
+    Generate a step-by-step explanation
+    for integrating an expression term by term.
+    """
+
+    steps = []
+
+    expanded = sp.expand(expression)
+
+    steps.append(
+        f"Original expression: {sp.sstr(expression)}"
+    )
+
+    steps.append(
+        f"Expanded expression: {sp.sstr(expanded)}"
+    )
+
+    steps.append(
+        f"Integrate each term with respect to {variable}."
+    )
+
+    terms = sp.Add.make_args(expanded)
+
+    for term in terms:
+        integral = sp.integrate(term, variable)
+
+        steps.append(
+            f"Integral of {sp.sstr(term)} "
+            f"= {sp.sstr(integral)}"
+        )
+
+    result = sp.integrate(expression, variable)
+
+    steps.append(
+        f"Antiderivative: {sp.sstr(result)}"
+    )
+
+    steps.append(
+        "Add the constant of integration C for an indefinite integral."
+    )
+
+    return steps

@@ -4,7 +4,11 @@ import sympy as sp
 from modules.nlp_engine import identify_operation, extract_expression
 from modules.expression_parser import parse_expression
 from modules.output_formatter import format_result
-from modules.explanation import explain_differentiation
+
+from modules.explanation import (
+    explain_differentiation,
+    explain_integration
+)
 
 from modules.calculator import (
     add,
@@ -250,12 +254,21 @@ def process_request(user_input):
         # Format the mathematical result.
         formatted_result = format_result(result)
 
-        # Generate explanations separately.
+        # Add the integration constant for indefinite integrals.
+        if operation == "integrate":
+            formatted_result += " + C"
+
+        # Generate operation-specific explanations.
         explanation_steps = []
 
         if operation == "differentiate":
-
             explanation_steps = explain_differentiation(
+                expression,
+                variable
+            )
+
+        elif operation == "integrate":
+            explanation_steps = explain_integration(
                 expression,
                 variable
             )

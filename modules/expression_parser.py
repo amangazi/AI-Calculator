@@ -4,7 +4,10 @@ import math
 import sympy as sp
 
 
-# Supported mathematical variables
+# ==========================================
+# Supported mathematical elements
+# ==========================================
+
 ALLOWED_SYMBOLS = {
     "x": sp.Symbol("x"),
     "y": sp.Symbol("y"),
@@ -12,14 +15,12 @@ ALLOWED_SYMBOLS = {
 }
 
 
-# Supported mathematical constants
 ALLOWED_CONSTANTS = {
     "pi": sp.pi,
     "E": sp.E
 }
 
 
-# Supported mathematical functions
 ALLOWED_FUNCTIONS = {
     "sin": sp.sin,
     "cos": sp.cos,
@@ -30,14 +31,21 @@ ALLOWED_FUNCTIONS = {
 }
 
 
-# AST complexity limits
+# ==========================================
+# Security and complexity limits
+# ==========================================
+
 MAX_AST_NODES = 100
 MAX_AST_DEPTH = 20
 
-# Numerical computation limits
 MAX_EXPONENT = 1000
 MAX_NUMERIC_BITS = 100000
+MAX_EXPRESSION_LENGTH = 200
 
+
+# ==========================================
+# Numerical result validation
+# ==========================================
 
 def validate_numeric_result(result):
 
@@ -50,6 +58,10 @@ def validate_numeric_result(result):
 
     return result
 
+
+# ==========================================
+# AST complexity validation
+# ==========================================
 
 def validate_ast_complexity(syntax_tree):
 
@@ -77,9 +89,13 @@ def validate_ast_complexity(syntax_tree):
         raise ValueError("Expression nesting is too deep.")
 
 
+# ==========================================
+# AST expression evaluation
+# ==========================================
+
 def evaluate_node(node):
 
-    # Handle numerical constants
+    # Handle numerical constants.
     if isinstance(node, ast.Constant):
 
         if isinstance(node.value, bool):
@@ -87,14 +103,17 @@ def evaluate_node(node):
 
         if isinstance(node.value, (int, float)):
 
-            if isinstance(node.value, float) and not math.isfinite(node.value):
+            if (
+                isinstance(node.value, float)
+                and not math.isfinite(node.value)
+            ):
                 raise ValueError("Invalid numerical value.")
 
             return sp.sympify(node.value)
 
         raise ValueError("Unsupported constant.")
 
-    # Handle variables and mathematical constants
+    # Handle variables and mathematical constants.
     elif isinstance(node, ast.Name):
 
         if node.id in ALLOWED_SYMBOLS:
@@ -105,7 +124,7 @@ def evaluate_node(node):
 
         raise ValueError(f"Unsupported name: {node.id}")
 
-    # Handle arithmetic operators
+    # Handle arithmetic operators.
     elif isinstance(node, ast.BinOp):
 
         left = evaluate_node(node.left)
@@ -123,7 +142,9 @@ def evaluate_node(node):
         elif isinstance(node.op, ast.Div):
 
             if right.is_zero is True:
-                raise ZeroDivisionError("Division by zero is not allowed.")
+                raise ZeroDivisionError(
+                    "Division by zero is not allowed."
+                )
 
             return validate_numeric_result(left / right)
 
@@ -132,13 +153,33 @@ def evaluate_node(node):
             if right.is_number:
 
                 if right.is_real is not True:
-                    raise ValueError("Exponent must be a real number.")
+                    raise ValueError(
+                        "Exponent must be a real number."
+                    )
 
-                if right > MAX_EXPONENT or right < -MAX_EXPONENT:
-                    raise ValueError("Exponent magnitude is too large.")
+                if (
+                    right > MAX_EXPONENT
+                    or right < -MAX_EXPONENT
+                ):
+                    raise ValueError(
+                        "Exponent magnitude is too large."
+                    )
 
-            # Prevent excessively large integer exponentiation
-            if left.is_Integer and right.is_Integer and right >= 0:
+            # Reject zero raised to a negative power.
+            if (
+                left.is_zero is True
+                and right.is_negative is True
+            ):
+                raise ZeroDivisionError(
+                    "Division by zero is not allowed."
+                )
+
+            # Prevent excessively large integer exponentiation.
+            if (
+                left.is_Integer
+                and right.is_Integer
+                and right >= 0
+            ):
 
                 base_value = int(left)
                 exponent_value = int(right)
@@ -146,17 +187,20 @@ def evaluate_node(node):
                 if base_value not in (-1, 0, 1):
 
                     estimated_bits = (
-                        abs(exponent_value) * abs(base_value).bit_length()
+                        abs(exponent_value)
+                        * abs(base_value).bit_length()
                     )
 
                     if estimated_bits > MAX_NUMERIC_BITS:
-                        raise ValueError("Numerical result is too large.")
+                        raise ValueError(
+                            "Numerical result is too large."
+                        )
 
             return validate_numeric_result(left ** right)
 
         raise ValueError("Unsupported arithmetic operator.")
 
-    # Handle positive and negative values
+    # Handle positive and negative values.
     elif isinstance(node, ast.UnaryOp):
 
         operand = evaluate_node(node.operand)
@@ -169,7 +213,7 @@ def evaluate_node(node):
 
         raise ValueError("Unsupported unary operator.")
 
-    # Handle mathematical function calls
+    # Handle mathematical function calls.
     elif isinstance(node, ast.Call):
 
         if not isinstance(node.func, ast.Name):
@@ -178,10 +222,14 @@ def evaluate_node(node):
         function_name = node.func.id
 
         if function_name not in ALLOWED_FUNCTIONS:
-            raise ValueError(f"Unsupported function: {function_name}")
+            raise ValueError(
+                f"Unsupported function: {function_name}"
+            )
 
         if len(node.args) != 1 or node.keywords:
-            raise ValueError("Functions must have exactly one argument.")
+            raise ValueError(
+                "Functions must have exactly one argument."
+            )
 
         argument = evaluate_node(node.args[0])
 
@@ -190,6 +238,10 @@ def evaluate_node(node):
     else:
         raise ValueError("Unsupported mathematical expression.")
 
+
+# ==========================================
+# Public expression parser
+# ==========================================
 
 def parse_expression(user_input):
 
@@ -201,13 +253,17 @@ def parse_expression(user_input):
     if not user_input:
         raise ValueError("Expression cannot be empty.")
 
-    if len(user_input) > 200:
+    if len(user_input) > MAX_EXPRESSION_LENGTH:
         raise ValueError("Expression is too long.")
 
     try:
-        syntax_tree = ast.parse(user_input, mode="eval")
 
-        # Validate AST complexity before processing the expression
+        syntax_tree = ast.parse(
+            user_input,
+            mode="eval"
+        )
+
+        # Validate complexity before evaluating.
         validate_ast_complexity(syntax_tree)
 
         expression = evaluate_node(syntax_tree.body)
@@ -216,3 +272,6 @@ def parse_expression(user_input):
 
     except SyntaxError:
         raise ValueError("Invalid mathematical syntax.")
+
+    except RecursionError:
+        raise ValueError("Expression nesting is too deep.")
