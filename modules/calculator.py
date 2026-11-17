@@ -1,5 +1,11 @@
+
+import numpy as np
 import sympy as sp
 
+
+# ==========================================
+# Symbolic expression operations
+# ==========================================
 
 def expand_expression(expression):
     return sp.expand(expression)
@@ -17,6 +23,10 @@ def integrate_expression(expression, variable):
     return sp.integrate(expression, variable)
 
 
+# ==========================================
+# Basic arithmetic operations
+# ==========================================
+
 def add(a, b):
     return a + b
 
@@ -30,11 +40,15 @@ def multiply(a, b):
 
 
 def divide(a, b):
-    if b == 0:
+    if b == 0 or getattr(b, "is_zero", None) is True:
         raise ZeroDivisionError("Cannot divide by zero.")
 
     return a / b
 
+
+# ==========================================
+# Expression evaluation
+# ==========================================
 
 def evaluate_expression(expression, variable, value):
     return expression.subs(variable, value)
@@ -47,9 +61,19 @@ def evaluate_numerically(expression, variable, values):
         modules="numpy"
     )
 
-    return numerical_function(values)
+    result = numerical_function(values)
+
+    if not np.all(np.isfinite(result)):
+        raise ValueError(
+            "Numerical evaluation produced a non-finite result."
+        )
+
+    return result
 
 
+# ==========================================
+# Mathematical functions
+# ==========================================
 
 def calculate_sin(expression):
     return sp.sin(expression)

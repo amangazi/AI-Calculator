@@ -48,13 +48,16 @@ MAX_EXPRESSION_LENGTH = 200
 # ==========================================
 
 def validate_numeric_result(result):
+    """Validate numerical results before returning them."""
 
     if result.is_Integer:
-
         result_bits = abs(int(result)).bit_length()
 
         if result_bits > MAX_NUMERIC_BITS:
             raise ValueError("Numerical result is too large.")
+
+    if result.is_Float and not math.isfinite(float(result)):
+        raise ValueError("Invalid numerical result.")
 
     return result
 
@@ -64,6 +67,7 @@ def validate_numeric_result(result):
 # ==========================================
 
 def validate_ast_complexity(syntax_tree):
+    """Limit the number and depth of AST nodes."""
 
     node_count = 0
 
@@ -86,7 +90,7 @@ def validate_ast_complexity(syntax_tree):
         traverse(syntax_tree, 1)
 
     except RecursionError:
-        raise ValueError("Expression nesting is too deep.")
+        raise ValueError("Expression nesting is too deep.") from None
 
 
 # ==========================================
@@ -109,7 +113,7 @@ def evaluate_node(node):
             ):
                 raise ValueError("Invalid numerical value.")
 
-            return sp.sympify(node.value)
+            return validate_numeric_result(sp.sympify(node.value))
 
         raise ValueError("Unsupported constant.")
 
@@ -174,7 +178,7 @@ def evaluate_node(node):
                     "Division by zero is not allowed."
                 )
 
-            # Prevent excessively large integer exponentiation.
+            # Check integer exponentiation size before calculating it.
             if (
                 left.is_Integer
                 and right.is_Integer
@@ -187,8 +191,8 @@ def evaluate_node(node):
                 if base_value not in (-1, 0, 1):
 
                     estimated_bits = (
-                        abs(exponent_value)
-                        * abs(base_value).bit_length()
+                        abs(base_value).bit_length()
+                        * exponent_value
                     )
 
                     if estimated_bits > MAX_NUMERIC_BITS:
@@ -209,7 +213,7 @@ def evaluate_node(node):
             return operand
 
         elif isinstance(node.op, ast.USub):
-            return -operand
+            return validate_numeric_result(-operand)
 
         raise ValueError("Unsupported unary operator.")
 
@@ -233,7 +237,9 @@ def evaluate_node(node):
 
         argument = evaluate_node(node.args[0])
 
-        return ALLOWED_FUNCTIONS[function_name](argument)
+        result = ALLOWED_FUNCTIONS[function_name](argument)
+
+        return validate_numeric_result(result)
 
     else:
         raise ValueError("Unsupported mathematical expression.")
@@ -244,6 +250,7 @@ def evaluate_node(node):
 # ==========================================
 
 def parse_expression(user_input):
+    """Safely parse a mathematical expression using Python AST."""
 
     if not isinstance(user_input, str):
         raise ValueError("Input must be a string.")
@@ -271,7 +278,7 @@ def parse_expression(user_input):
         return expression
 
     except SyntaxError:
-        raise ValueError("Invalid mathematical syntax.")
+        raise ValueError("Invalid mathematical syntax.") from None
 
     except RecursionError:
-        raise ValueError("Expression nesting is too deep.")
+        raise ValueError("Expression nesting is too deep.") from None

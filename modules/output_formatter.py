@@ -1,17 +1,17 @@
+
 import sympy as sp
 
 
 def format_result(result):
 
-    # Check whether the result is a SymPy mathematical object
+    # Handle SymPy mathematical objects.
     if isinstance(result, sp.Basic):
 
-        exact_result = str(result)
+        exact_result = sp.sstr(result)
 
-        # Check whether the result is a numerical value
         if result.is_number and not result.is_Integer:
 
-            numerical_result = str(result.evalf())
+            numerical_result = sp.sstr(result.evalf())
 
             return (
                 f"Exact result: {exact_result}\n"
@@ -20,12 +20,12 @@ def format_result(result):
 
         return f"Result: {exact_result}"
 
-    # Handle lists, such as equation solutions
+    # Handle equation solutions.
     elif isinstance(result, list):
 
         return f"Results: {result}"
 
-    # Handle ordinary Python values and error messages
+    # Handle ordinary Python values and error messages.
     else:
 
         return f"Result: {result}"

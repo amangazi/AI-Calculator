@@ -118,6 +118,12 @@ def identify_variable(expression):
 
 def process_request(user_input):
 
+    if not isinstance(user_input, str) or not user_input.strip():
+        return create_response(
+            success=False,
+            error="Please enter a mathematical request."
+        )
+
     operation = identify_operation(user_input)
 
     if operation is None:
@@ -127,6 +133,14 @@ def process_request(user_input):
         )
 
     expression_text = extract_expression(user_input)
+
+    # Check for an empty extracted expression.
+    if not expression_text or not expression_text.strip():
+        return create_response(
+            success=False,
+            operation=operation,
+            error="Please provide a mathematical expression."
+        )
 
     try:
 
